@@ -31,12 +31,20 @@ function Game({ socket }) {
             setTurn(turn);
         });
 
-        socket.on('gameOver', ({ winner, board }) => {
+        socket.on('gameOver', ({ winner, board, forfeitedBy }) => {
             setBoard(board);
             setGameOver(true);
-            if (winner === null) setResultMessage("It's a draw!");
-            else if (winner === token) setResultMessage('You win!');
-            else setResultMessage('You lose!');
+
+            if (forfeitedBy) {
+                if (forfeitedBy === token) setResultMessage('You forfeited. You lose!');
+                else setResultMessage('Opponent forfeited. You win!');
+            } else if (winner === null) {
+                setResultMessage("It's a draw!");
+            } else if (winner === token) {
+                setResultMessage('You win!');
+            } else {
+                setResultMessage('You lose!');
+            }
         });
 
         socket.on('newMessage', ({ token: senderToken, message }) => {
@@ -90,10 +98,17 @@ function Game({ socket }) {
         setMessageInput('');
     };
 
+    const handleForfeit = () => {
+        if (gameOver) return;
+        socket.emit('forfeitGame', { code, token });
+        navigate('/home', { state: { token } });
+    };
+
     return (
         <>
             <h1>Connect 4</h1>
             <p>{gameOver ? resultMessage : isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
+            {!gameOver && <button onClick={handleForfeit}>Forfeit Match</button>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 60px)', gap: '4px' }}>
                 {board.map((cell, i) => (
                     <div

@@ -227,6 +227,38 @@ io.on('connection', (socket) => {
         io.to(code).emit('moveMade', { board: room.board, turn: room.turn });
     });
 
+    socket.on('forfeitGame', async ({ code, token }) => {
+        const room = await Room.findOne({ code });
+
+        if (!room) {
+            return socket.emit('error', { message: 'Room not found' });
+        }
+
+        if (room.status !== 'active') {
+            return socket.emit('error', { message: 'Game not active' });
+        }
+
+        const forfeitingPlayer = room.players.find(p => p.token === token);
+        if (!forfeitingPlayer) {
+            return socket.emit('error', { message: 'You are not part of this room' });
+        }
+
+        const winnerPlayer = room.players.find(p => p.token !== token);
+        if (!winnerPlayer) {
+            return socket.emit('error', { message: 'Opponent not found' });
+        }
+
+        room.status = 'finished';
+        await room.save();
+        await updateGameStats(room, winnerPlayer.token, false);
+
+        io.to(code).emit('gameOver', {
+            winner: winnerPlayer.token,
+            board: room.board,
+            forfeitedBy: token
+        });
+    });
+
     socket.on('sendMessage', ({ code, token, message }) => {
         io.to(code).emit('newMessage', { token, message });
     });
