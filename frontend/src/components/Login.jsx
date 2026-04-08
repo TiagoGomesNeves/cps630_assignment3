@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 function Login(){
     const [ password, setPassword ] = useState('');
     const [ username, setUsername ] = useState('');
-    const [ authToken, setAuthToken ] = useState('');
+   
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -21,11 +21,10 @@ function Login(){
             const result = await response.json();
 
             if(response.status === 200){
-                setAuthToken(result.token);
                 setUsername('');
                 setPassword('');
                 alert("Login Successful");
-                navigate('/home', { state: { token: authToken } });
+                navigate('/home', { state: { token: result.token } });
             }else{
                 setUsername('');
                 setPassword('');

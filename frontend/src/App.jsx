@@ -1,6 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import EntryPage from './components/EntryPage';
 import Home from './components/Home';
+import Game from'./components/Game';
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:8080');
 
 function App() {
 
@@ -8,7 +12,8 @@ function App() {
     <>
        <Routes>
         <Route path="/" element={<EntryPage />} />
-        <Route path='/home' element={<Home />} />
+        <Route path='/home' element={<Home socket={socket}/>} />
+        <Route path="/game/:code" element={<Game socket={socket}/>}/>
       </Routes>
     </>
   )

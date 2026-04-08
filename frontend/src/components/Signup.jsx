@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 function Signup(){
     const [ password, setPassword ] = useState('');
     const [ username, setUsername ] = useState('');
-    const [ authToken, setAuthToken ] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -20,11 +19,10 @@ function Signup(){
             const result = await response.json();
 
             if(response.status === 201){
-                setAuthToken(result.token);
                 setUsername('');
                 setPassword('');
                 alert("Signup Successful");
-                navigate('/home', { state: { token: authToken } });
+                navigate('/home', { state: { token: result.token } });
             }else{
                 setUsername('');
                 setPassword('');

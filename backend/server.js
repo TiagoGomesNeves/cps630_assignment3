@@ -4,9 +4,16 @@ const app = express();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto')
+const http = require('http');
+const server =require('http').createServer(app);
+const io = require('socket.io')(server, {
+    cors: { origin: 'http://localhost:5173' }
+});
+
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
+const Room = require('./models/Room');
 
 const PORT = 8080;
 const DATABASE_HOST = 'localhost';
@@ -27,7 +34,131 @@ db.once('open', function () {
   console.log("Database connected!");
 });
 
-// Authorization middleware used to protect routes must b placed in all api's
+
+function checkWin(board) {
+    const rows = 6, cols = 7;
+    const get = (r, c) => board[r * cols + c];
+
+    // Horizontal
+    for (let r = 0; r < rows; r++)
+        for (let c = 0; c <= cols - 4; c++)
+            if (get(r,c) && get(r,c) === get(r,c+1) && get(r,c) === get(r,c+2) && get(r,c) === get(r,c+3))
+                return get(r,c);
+
+    // Vertical
+    for (let r = 0; r <= rows - 4; r++)
+        for (let c = 0; c < cols; c++)
+            if (get(r,c) && get(r,c) === get(r+1,c) && get(r,c) === get(r+2,c) && get(r,c) === get(r+3,c))
+                return get(r,c);
+
+    // Diagonal down-right
+    for (let r = 0; r <= rows - 4; r++)
+        for (let c = 0; c <= cols - 4; c++)
+            if (get(r,c) && get(r,c) === get(r+1,c+1) && get(r,c) === get(r+2,c+2) && get(r,c) === get(r+3,c+3))
+                return get(r,c);
+
+    // Diagonal down-left
+    for (let r = 0; r <= rows - 4; r++)
+        for (let c = 3; c < cols; c++)
+            if (get(r,c) && get(r,c) === get(r+1,c-1) && get(r,c) === get(r+2,c-2) && get(r,c) === get(r+3,c-3))
+                return get(r,c);
+
+    return null;
+}
+
+// For Socket.io 
+io.on('connection', (socket) => {
+    console.log('User connected at: ', socket.id);
+
+    socket.on('createRoom', async ({token}) =>{
+        const code = crypto.randomUUID().substring(0,6).toUpperCase();
+        const room = new Room({
+            code: code,
+            players: [{ token: token, socketId: socket.id }],
+            board: Array(42).fill(null),
+            turn: null,
+            status: 'waiting'
+        });
+
+        await room.save();
+        socket.join(code);
+        socket.emit('roomCreated', { code });
+    });
+
+
+    socket.on('joinRoom', async ({token, code}) =>{
+        const room = await Room.findOne({code: code});
+
+        if (!room){
+            return socket.emit('error', {message: "Room Not Found"});
+        }
+        if (room.players.length >= 2){
+            return socket.emit('error', {message: 'Room is Full'});
+        }
+
+        if(room.players.find(p => p.token === token)){
+            return socket.emit('error', {message: 'Already in Room'});
+        }
+
+        room.players.push({token: token, socketId: socket.id});
+        room.turn = room.players[0].token;
+        room.status = 'active';
+        await room.save();
+
+        socket.join(code);
+        io.to(code).emit('gameStart', { code, turn: room.turn });
+    });
+
+    socket.on('disconnect', () =>{
+        console.log('User Disconnected: ', socket.id);
+    });
+
+    socket.on('makeMove', async ({ code, token, column }) => {
+        const room = await Room.findOne({ code });
+        if (!room) return socket.emit('error', { message: 'Room not found' });
+        if (room.status !== 'active') return socket.emit('error', { message: 'Game not active' });
+        if (room.turn !== token) return socket.emit('error', { message: 'Not your turn' });
+        let row = -1;
+        for (let r = 5; r >= 0; r--) {
+            if (!room.board[r * 7 + column]) {
+                row = r;
+                break;
+            }
+        }
+        if (row === -1) return socket.emit('error', { message: 'Column is full' });
+
+  
+        const piece = room.players[0].token === token ? 'R' : 'Y';
+        room.board[row * 7 + column] = piece;
+
+        
+        const winner = checkWin(room.board);
+        if (winner) {
+            room.status = 'finished';
+            await room.save();
+            return io.to(code).emit('gameOver', { winner: token, board: room.board });
+        }
+
+       
+        if (room.board.every(cell => cell !== null)) {
+            room.status = 'finished';
+            await room.save();
+            return io.to(code).emit('gameOver', { winner: null, board: room.board });
+        }
+
+       
+        room.turn = room.players.find(p => p.token !== token).token;
+        await room.save();
+        io.to(code).emit('moveMade', { board: room.board, turn: room.turn });
+    });
+
+    socket.on('sendMessage', ({ code, token, message }) => {
+        io.to(code).emit('newMessage', { token, message });
+    });
+
+});
+
+// Authorization middleware used to protect routes must be placed in all api's
 async function requireAuth(req, res, next){
     const authHeader = req.headers.authorization;
 
@@ -105,4 +236,4 @@ app.post('/api/auth/signup', express.json(), async (req, res) => {
 
 
 
-app.listen(PORT, () => { console.log("Server started on port: " + PORT) });
+server.listen(PORT, () => console.log(`Server started on port: ${PORT}`));
