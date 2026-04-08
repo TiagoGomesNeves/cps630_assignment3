@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
-
-function Game({socket}) {
+function Game({ socket }) {
     const location = useLocation();
     const { code } = useParams();
     const navigate = useNavigate();
@@ -19,6 +18,14 @@ function Game({socket}) {
     const isMyTurn = turn === token;
 
     useEffect(() => {
+        if (!token) {
+            navigate('/');
+        }
+    }, [token, navigate]);
+
+    useEffect(() => {
+        if (!token) return;
+
         socket.on('moveMade', ({ board, turn }) => {
             setBoard(board);
             setTurn(turn);
@@ -36,12 +43,35 @@ function Game({socket}) {
             setMessages(prev => [...prev, { senderToken, message }]);
         });
 
+        socket.on('roomState', ({ board, turn, status, winner }) => {
+            setBoard(board);
+            setTurn(turn);
+
+            if (status === 'finished') {
+                setGameOver(true);
+
+                if (winner === null) {
+                    setResultMessage("It's a draw!");
+                } else if (winner === token) {
+                    setResultMessage('You win!');
+                } else {
+                    setResultMessage('You lose!');
+                }
+            } else {
+                setGameOver(false);
+                setResultMessage('');
+            }
+        });
+
+        socket.emit('rejoinRoom', { token, code });
+
         return () => {
             socket.off('moveMade');
             socket.off('gameOver');
             socket.off('newMessage');
+            socket.off('roomState');
         };
-    }, []);
+    }, [socket, token, code]);
 
     const handleColumnClick = (column) => {
         console.log('clicked column:', column);

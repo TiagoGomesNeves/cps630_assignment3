@@ -6,12 +6,23 @@ function Home({socket}){
     const location = useLocation();
     const token = location.state?.token;
     const navigate = useNavigate();
+
+    console.log('Home token:', token);
+    
     const [code , setCode ] = useState('');
     const [waiting, setWaiting] = useState(false);
     const [roomCode, setRoomCode] = useState('');
     
+    useEffect(() => {
+        if (!token) {
+            navigate('/');
+        }
+    }, [token, navigate]);
+
 
     useEffect(() => {
+        if (!token) return;
+
         socket.on('roomCreated', ({ code }) => {
             setRoomCode(code);
             setWaiting(true);
@@ -30,7 +41,8 @@ function Home({socket}){
             socket.off('gameStart');
             socket.off('error');
         };
-    }, []);
+    }, [socket, navigate, token]);
+
 
     const handleCreate = () => {
         socket.emit('createRoom', { token });
