@@ -66,6 +66,41 @@ function checkWin(board) {
     return null;
 }
 
+async function updateGameStats(room, winnerToken = null, isDraw = false) {
+    if (!room || !room.players || room.players.length < 2) {
+        return;
+    }
+
+    const player1Token = room.players[0].token;
+    const player2Token = room.players[1].token;
+
+    if (isDraw) {
+        await User.updateOne(
+            { token: player1Token },
+            { $inc: { draws: 1 } }
+        );
+
+        await User.updateOne(
+            { token: player2Token },
+            { $inc: { draws: 1 } }
+        );
+
+        return;
+    }
+
+    const loserToken = player1Token === winnerToken ? player2Token : player1Token;
+
+    await User.updateOne(
+        { token: winnerToken },
+        { $inc: { wins: 1 } }
+    );
+
+    await User.updateOne(
+        { token: loserToken },
+        { $inc: { losses: 1 } }
+    );
+}
+
 // For Socket.io 
 io.on('connection', (socket) => {
     console.log('User connected at: ', socket.id);
@@ -109,11 +144,52 @@ io.on('connection', (socket) => {
         io.to(code).emit('gameStart', { code, turn: room.turn });
     });
 
+    socket.on('rejoinRoom', async ({ token, code }) => {
+        const cleanedCode = code.trim().toUpperCase();
+        const room = await Room.findOne({ code: cleanedCode });
+
+        if (!room) {
+            return socket.emit('error', { message: 'Room not found' });
+        }
+
+        const playerIndex = room.players.findIndex((p) => p.token === token);
+
+        if (playerIndex === -1) {
+            return socket.emit('error', { message: 'You are not part of this room' });
+        }
+
+        room.players[playerIndex].socketId = socket.id;
+        await room.save();
+
+        socket.join(cleanedCode);
+
+        const winnerPiece = checkWin(room.board);
+        let winner = null;
+
+        if (winnerPiece === 'R') {
+            winner = room.players[0]?.token || null;
+        } else if (winnerPiece === 'Y') {
+            winner = room.players[1]?.token || null;
+        }
+
+        socket.emit('roomState', {
+            code: room.code,
+            board: room.board,
+            turn: room.turn,
+            status: room.status,
+            winner: winner
+        });
+    });
+
     socket.on('disconnect', () =>{
         console.log('User Disconnected: ', socket.id);
     });
 
     socket.on('makeMove', async ({ code, token, column }) => {
+        if (!Number.isInteger(column) || column < 0 || column > 6) {
+            return socket.emit('error', { message: 'Invalid column' });
+        }
+
         const room = await Room.findOne({ code });
         if (!room) return socket.emit('error', { message: 'Room not found' });
         if (room.status !== 'active') return socket.emit('error', { message: 'Game not active' });
@@ -127,7 +203,6 @@ io.on('connection', (socket) => {
         }
         if (row === -1) return socket.emit('error', { message: 'Column is full' });
 
-  
         const piece = room.players[0].token === token ? 'R' : 'Y';
         room.board[row * 7 + column] = piece;
 
@@ -136,17 +211,17 @@ io.on('connection', (socket) => {
         if (winner) {
             room.status = 'finished';
             await room.save();
+            await updateGameStats(room, token, false);
             return io.to(code).emit('gameOver', { winner: token, board: room.board });
         }
 
-       
         if (room.board.every(cell => cell !== null)) {
             room.status = 'finished';
             await room.save();
+            await updateGameStats(room, null, true);
             return io.to(code).emit('gameOver', { winner: null, board: room.board });
         }
 
-       
         room.turn = room.players.find(p => p.token !== token).token;
         await room.save();
         io.to(code).emit('moveMade', { board: room.board, turn: room.turn });
