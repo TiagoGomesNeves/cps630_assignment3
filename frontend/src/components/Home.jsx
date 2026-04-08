@@ -1,5 +1,6 @@
 import { useState , useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import Navbar from "./Navbar";
 
 
 function Home({socket}){
@@ -53,24 +54,29 @@ function Home({socket}){
         socket.emit('joinRoom', { token, code });
     };
 
-    return (
-        <>
-            <h1>Home</h1>
-            {waiting ? (
-                <>
-                    <p>Room Code: <strong>{roomCode}</strong></p>
-                    <p>Waiting for opponent to join...</p>
-                </>
-            ) : (
-                <>
-                    <button onClick={handleCreate}>Create Room</button>
-                    <hr />
-                    <input placeholder='Enter room code' value={code} onChange={(e) => setCode(e.target.value)} />
-                    <button onClick={handleJoin}>Join Room</button>
-                </>
-            )}
-        </>
-    );
-};
+return (
+    <>
+        <Navbar />
 
+        <h1>Home</h1>
+        {waiting ? (
+            <>
+                <p>Room Code: <strong>{roomCode}</strong></p>
+                <p>Waiting for opponent to join...</p>
+            </>
+        ) : (
+            <>
+                <button onClick={handleCreate}>Create Room</button>
+                <hr />
+                <input 
+                    placeholder='Enter room code' 
+                    value={code} 
+                    onChange={(e) => setCode(e.target.value)} 
+                />
+                <button onClick={handleJoin}>Join Room</button>
+            </>
+        )}
+    </>
+);
+};
 export default Home;
