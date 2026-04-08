@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
 function Game({ socket }) {
@@ -14,8 +14,16 @@ function Game({ socket }) {
     const [resultMessage, setResultMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
+    const [disconnectMessage, setDisconnectMessage] = useState('');
 
+    const gameOverRef = useRef(false);
+    const leaveHandledRef = useRef(false);
+    const cleanupArmedRef = useRef(false);
     const isMyTurn = turn === token;
+
+    useEffect(() => {
+        gameOverRef.current = gameOver;
+    }, [gameOver]);
 
     useEffect(() => {
         if (!token) {
@@ -26,18 +34,39 @@ function Game({ socket }) {
     useEffect(() => {
         if (!token) return;
 
-        socket.on('moveMade', ({ board, turn }) => {
+        leaveHandledRef.current = false;
+        cleanupArmedRef.current = false;
+
+        const armCleanupTimer = setTimeout(() => {
+            cleanupArmedRef.current = true;
+        }, 0);
+
+        const leaveGame = () => {
+            if (leaveHandledRef.current || gameOverRef.current) {
+                return;
+            }
+
+            leaveHandledRef.current = true;
+            socket.emit('leaveGame', { code, token });
+        };
+
+        const handleMoveMade = ({ board, turn }) => {
             setBoard(board);
             setTurn(turn);
-        });
+        };
 
-        socket.on('gameOver', ({ winner, board, forfeitedBy }) => {
+        const handleGameOver = ({ winner, board, forfeitedBy, disconnectedBy }) => {
             setBoard(board);
             setGameOver(true);
+            gameOverRef.current = true;
+            setDisconnectMessage('');
 
             if (forfeitedBy) {
                 if (forfeitedBy === token) setResultMessage('You forfeited. You lose!');
                 else setResultMessage('Opponent forfeited. You win!');
+            } else if (disconnectedBy) {
+                if (disconnectedBy === token) setResultMessage('You disconnected for too long. You lose!');
+                else setResultMessage('Opponent disconnected for too long. You win!');
             } else if (winner === null) {
                 setResultMessage("It's a draw!");
             } else if (winner === token) {
@@ -45,18 +74,32 @@ function Game({ socket }) {
             } else {
                 setResultMessage('You lose!');
             }
-        });
+        };
 
-        socket.on('newMessage', ({ token: senderToken, message }) => {
+        const handleNewMessage = ({ token: senderToken, message }) => {
             setMessages(prev => [...prev, { senderToken, message }]);
-        });
+        };
 
-        socket.on('roomState', ({ board, turn, status, winner }) => {
+        const handlePlayerDisconnected = ({ token: disconnectedToken }) => {
+            if (disconnectedToken !== token) {
+                setDisconnectMessage('Opponent disconnected. Waiting for reconnect...');
+            }
+        };
+
+        const handlePlayerReconnected = ({ token: reconnectedToken }) => {
+            if (reconnectedToken !== token) {
+                setDisconnectMessage('');
+            }
+        };
+
+        const handleRoomState = ({ board, turn, status, winner }) => {
             setBoard(board);
             setTurn(turn);
+            setDisconnectMessage('');
 
             if (status === 'finished') {
                 setGameOver(true);
+                gameOverRef.current = true;
 
                 if (winner === null) {
                     setResultMessage("It's a draw!");
@@ -67,28 +110,71 @@ function Game({ socket }) {
                 }
             } else {
                 setGameOver(false);
+                gameOverRef.current = false;
                 setResultMessage('');
             }
-        });
+        };
+
+        const handleError = ({ message }) => {
+            if (message === 'This game has already finished') {
+                navigate('/home', { state: { token }, replace: true });
+                return;
+            }
+
+            if (message === 'Room not found') {
+                navigate('/home', { state: { token }, replace: true });
+            }
+        };
+
+        const handlePopState = () => {
+            leaveGame();
+        };
+
+        const handlePageHide = () => {
+            leaveGame();
+        };
+
+        const handleBeforeUnload = () => {
+            leaveGame();
+        };
+
+        socket.on('moveMade', handleMoveMade);
+        socket.on('gameOver', handleGameOver);
+        socket.on('newMessage', handleNewMessage);
+        socket.on('playerDisconnected', handlePlayerDisconnected);
+        socket.on('playerReconnected', handlePlayerReconnected);
+        socket.on('roomState', handleRoomState);
+        socket.on('error', handleError);
 
         socket.emit('rejoinRoom', { token, code });
 
+        window.addEventListener('popstate', handlePopState);
+        window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () => {
-            socket.off('moveMade');
-            socket.off('gameOver');
-            socket.off('newMessage');
-            socket.off('roomState');
+            clearTimeout(armCleanupTimer);
+
+            window.removeEventListener('popstate', handlePopState);
+            window.removeEventListener('pagehide', handlePageHide);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+
+            if (cleanupArmedRef.current) {
+                leaveGame();
+            }
+
+            socket.off('moveMade', handleMoveMade);
+            socket.off('gameOver', handleGameOver);
+            socket.off('newMessage', handleNewMessage);
+            socket.off('playerDisconnected', handlePlayerDisconnected);
+            socket.off('playerReconnected', handlePlayerReconnected);
+            socket.off('roomState', handleRoomState);
+            socket.off('error', handleError);
         };
-    }, [socket, token, code]);
+    }, [socket, token, code, navigate]);
 
     const handleColumnClick = (column) => {
-        console.log('clicked column:', column);
-        console.log('isMyTurn:', isMyTurn);
-        console.log('gameOver:', gameOver);
-        console.log('turn:', turn);
-        console.log('token:', token);
         if (!isMyTurn || gameOver) return;
-        console.log('emitting makeMove');
         socket.emit('makeMove', { code, token, column });
     };
 
@@ -100,6 +186,7 @@ function Game({ socket }) {
 
     const handleForfeit = () => {
         if (gameOver) return;
+        leaveHandledRef.current = true;
         socket.emit('forfeitGame', { code, token });
         navigate('/home', { state: { token } });
     };
@@ -108,6 +195,7 @@ function Game({ socket }) {
         <>
             <h1>Connect 4</h1>
             <p>{gameOver ? resultMessage : isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
+            {disconnectMessage && !gameOver && <p>{disconnectMessage}</p>}
             {!gameOver && <button onClick={handleForfeit}>Forfeit Match</button>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 60px)', gap: '4px' }}>
                 {board.map((cell, i) => (

@@ -26,12 +26,12 @@ mongoose.connect(dbURL);
 
 const db = mongoose.connection;
 db.on('error', function(e) {
-  console.log('connection error:' + e);
-  process.exit(1); 
+    console.log('connection error:' + e);
+    process.exit(1); 
 });
 
 db.once('open', function () {
-  console.log("Database connected!");
+    console.log("Database connected!");
 });
 
 
@@ -66,6 +66,7 @@ function checkWin(board) {
     return null;
 }
 
+// Helper function used to update wins losses and draws after a game ends
 async function updateGameStats(room, winnerToken = null, isDraw = false) {
     if (!room || !room.players || room.players.length < 2) {
         return;
@@ -101,11 +102,98 @@ async function updateGameStats(room, winnerToken = null, isDraw = false) {
     );
 }
 
+// Map used to store disconnect grace period timers
+const disconnectTimers = new Map();
+
+async function startDisconnectTimer(roomCode, disconnectedToken) {
+    const disconnectKey = `${roomCode}:${disconnectedToken}`;
+
+    if (disconnectTimers.has(disconnectKey)) {
+        clearTimeout(disconnectTimers.get(disconnectKey));
+    }
+
+    const timer = setTimeout(async () => {
+        const latestRoom = await Room.findOne({ code: roomCode });
+
+        if (!latestRoom || latestRoom.status !== 'active') {
+            disconnectTimers.delete(disconnectKey);
+            return;
+        }
+
+        const stillDisconnectedPlayer = latestRoom.players.find(
+            p => p.token === disconnectedToken
+        );
+
+        if (!stillDisconnectedPlayer || stillDisconnectedPlayer.socketId) {
+            disconnectTimers.delete(disconnectKey);
+            return;
+        }
+
+        const winnerPlayer = latestRoom.players.find(
+            p => p.token !== disconnectedToken
+        );
+
+        if (!winnerPlayer) {
+            disconnectTimers.delete(disconnectKey);
+            return;
+        }
+
+        latestRoom.status = 'finished';
+        await latestRoom.save();
+        await updateGameStats(latestRoom, winnerPlayer.token, false);
+
+        io.to(roomCode).emit('gameOver', {
+            winner: winnerPlayer.token,
+            board: latestRoom.board,
+            disconnectedBy: disconnectedToken
+        });
+
+        disconnectTimers.delete(disconnectKey);
+    }, 25000);
+
+    disconnectTimers.set(disconnectKey, timer);
+}
+
+async function disconnectPlayerFromRoom(room, token) {
+    const player = room.players.find(p => p.token === token);
+
+    if (!player || !player.socketId) {
+        return;
+    }
+
+    player.socketId = null;
+    await room.save();
+
+    io.to(room.code).emit('playerDisconnected', { token });
+    await startDisconnectTimer(room.code, token);
+}
+
 // For Socket.io 
 io.on('connection', (socket) => {
     console.log('User connected at: ', socket.id);
 
     socket.on('createRoom', async ({token}) =>{
+        const existingRooms = await Room.find({
+            'players.token': token,
+            status: { $in: ['waiting', 'active'] }
+        });
+
+        for (const oldRoom of existingRooms) {
+            const player = oldRoom.players.find((p) => p.token === token);
+
+            if (!player) {
+                continue;
+            }
+            socket.leave(oldRoom.code);
+            if (oldRoom.status === 'waiting') {
+                await Room.deleteOne({ _id: oldRoom._id });
+                continue;
+            }
+            if (player.socketId) {
+                await disconnectPlayerFromRoom(oldRoom, token);
+            }
+        }
+
         const code = crypto.randomUUID().substring(0,6).toUpperCase();
         const room = new Room({
             code: code,
@@ -122,7 +210,35 @@ io.on('connection', (socket) => {
 
 
     socket.on('joinRoom', async ({token, code}) =>{
-        const room = await Room.findOne({code: code});
+        const cleanedCode = code.trim().toUpperCase();
+
+        const existingRooms = await Room.find({
+            'players.token': token,
+            status: { $in: ['waiting', 'active'] }
+        });
+
+        for (const oldRoom of existingRooms) {
+            if (oldRoom.code === cleanedCode) {
+                continue;
+            }
+            const player = oldRoom.players.find((p) => p.token === token);
+
+            if (!player) {
+                continue;
+            }
+
+            socket.leave(oldRoom.code);
+
+            if (oldRoom.status === 'waiting') {
+                await Room.deleteOne({ _id: oldRoom._id });
+                continue;
+            }
+
+            if (player.socketId) {
+                await disconnectPlayerFromRoom(oldRoom, token);
+            }
+        }
+        const room = await Room.findOne({code: cleanedCode});
 
         if (!room){
             return socket.emit('error', {message: "Room Not Found"});
@@ -140,8 +256,8 @@ io.on('connection', (socket) => {
         room.status = 'active';
         await room.save();
 
-        socket.join(code);
-        io.to(code).emit('gameStart', { code, turn: room.turn });
+        socket.join(cleanedCode);
+        io.to(cleanedCode).emit('gameStart', { code: cleanedCode, turn: room.turn });
     });
 
     socket.on('rejoinRoom', async ({ token, code }) => {
@@ -158,10 +274,50 @@ io.on('connection', (socket) => {
             return socket.emit('error', { message: 'You are not part of this room' });
         }
 
+        if (room.status === 'finished') {
+            return socket.emit('error', { message: 'This game has already finished' });
+        }
+
+        const existingRooms = await Room.find({
+            'players.token': token,
+            status: { $in: ['waiting', 'active'] }
+        });
+
+        for (const oldRoom of existingRooms) {
+            if (oldRoom.code === cleanedCode) {
+                continue;
+            }
+
+            const player = oldRoom.players.find((p) => p.token === token);
+
+            if (!player) {
+                continue;
+            }
+
+            socket.leave(oldRoom.code);
+
+            if (oldRoom.status === 'waiting') {
+                await Room.deleteOne({ _id: oldRoom._id });
+                continue;
+            }
+
+            if (player.socketId) {
+                await disconnectPlayerFromRoom(oldRoom, token);
+            }
+        }
+
         room.players[playerIndex].socketId = socket.id;
         await room.save();
 
         socket.join(cleanedCode);
+
+        // Clears disconnect timer if player rejoins within grace period
+        const disconnectKey = `${cleanedCode}:${token}`;
+        if (disconnectTimers.has(disconnectKey)) {
+            clearTimeout(disconnectTimers.get(disconnectKey));
+            disconnectTimers.delete(disconnectKey);
+            io.to(cleanedCode).emit('playerReconnected', { token });
+        }
 
         const winnerPiece = checkWin(room.board);
         let winner = null;
@@ -181,11 +337,50 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('disconnect', () =>{
-        console.log('User Disconnected: ', socket.id);
+    socket.on('leaveGame', async ({ code, token }) => {
+        const cleanedCode = code.trim().toUpperCase();
+        const room = await Room.findOne({ code: cleanedCode });
+
+        if (!room || room.status !== 'active') {
+            return;
+        }
+
+        const player = room.players.find(p => p.token === token);
+
+        if (!player || player.socketId !== socket.id) {
+            return;
+        }
+
+        socket.leave(cleanedCode);
+        await disconnectPlayerFromRoom(room, token);
+    });
+
+    // Handles temporary disconnects and gives player time to reconnect before losing
+    socket.on('disconnect', async () =>{
+        const rooms = await Room.find({ 'players.socketId': socket.id });
+
+        for (const room of rooms) {
+            if (room.status === 'waiting') {
+                await Room.deleteOne({ _id: room._id });
+                continue;
+            }
+
+            if (room.status !== 'active') {
+                continue;
+            }
+
+            const disconnectedPlayer = room.players.find(p => p.socketId === socket.id);
+
+            if (!disconnectedPlayer) {
+                continue;
+            }
+
+            await disconnectPlayerFromRoom(room, disconnectedPlayer.token);
+        }
     });
 
     socket.on('makeMove', async ({ code, token, column }) => {
+        // Validates column input on backend so only real board columns are allowed
         if (!Number.isInteger(column) || column < 0 || column > 6) {
             return socket.emit('error', { message: 'Invalid column' });
         }
@@ -211,14 +406,20 @@ io.on('connection', (socket) => {
         if (winner) {
             room.status = 'finished';
             await room.save();
+
+            // Updates database stats when a player wins normally
             await updateGameStats(room, token, false);
+
             return io.to(code).emit('gameOver', { winner: token, board: room.board });
         }
 
         if (room.board.every(cell => cell !== null)) {
             room.status = 'finished';
             await room.save();
+
+            // Updates database stats when the match ends in a draw
             await updateGameStats(room, null, true);
+
             return io.to(code).emit('gameOver', { winner: null, board: room.board });
         }
 
@@ -227,6 +428,7 @@ io.on('connection', (socket) => {
         io.to(code).emit('moveMade', { board: room.board, turn: room.turn });
     });
 
+    // Allows a player to forfeit and gives the opponent the win
     socket.on('forfeitGame', async ({ code, token }) => {
         const room = await Room.findOne({ code });
 
