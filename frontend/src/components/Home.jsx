@@ -61,8 +61,6 @@ return (
         <Navbar />
 
         <h1>Home</h1>
-        <button onClick={() => navigate('/leaderboard', { state: { token } })}>View Leaderboard</button>
-        <hr />
         {waiting ? (
             <>
                 <p>Room Code: <strong>{roomCode}</strong></p>
