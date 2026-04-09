@@ -5,7 +5,6 @@ const Navbar = () => {
   const location = useLocation();
 
   const handleLogout = () => {
-  
     navigate("/", { replace: true });
   };
 
@@ -13,9 +12,14 @@ const Navbar = () => {
     navigate("/home", { state: location.state }); 
   };
 
+  const handleProfile = () => {
+    navigate("/profile", { state: location.state });
+  };
+
   return (
     <div>
       <button onClick={handleHome}>Home</button>
+      <button onClick={handleProfile}>Profile</button> 
       <button onClick={handleLogout}>Logout</button>
     </div>
   );
