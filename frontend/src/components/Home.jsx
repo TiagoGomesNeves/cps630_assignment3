@@ -58,7 +58,9 @@ return (
     <>
         <Navbar />
 
-        <h1 className="arcade-font">Home</h1>
+        <h1>Home</h1>
+        <button onClick={() => navigate('/leaderboard', { state: { token } })}>View Leaderboard</button>
+        <hr />
         {waiting ? (
             <>
                 <p>Room Code: <strong>{roomCode}</strong></p>
