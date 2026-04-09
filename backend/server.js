@@ -579,4 +579,23 @@ app.get('/api/leaderboard', requireAuth, async (req, res) => {
     }
 });
 
+app.get('/api/profile', requireAuth, async (req, res) => {
+    try {
+        const user = req.user;
+
+        return res.status(200).json({
+            username: user.username,
+            wins: user.wins,
+            losses: user.losses,
+            draws: user.draws,
+            gamesPlayed: user.wins + user.losses + user.draws
+        });
+
+    } catch (error) {
+        console.error('Profile error:', error);
+        return res.status(500).json({ error: 'Failed to load profile' });
+    }
+});
+
 server.listen(PORT, () => console.log(`Server started on port: ${PORT}`));
+

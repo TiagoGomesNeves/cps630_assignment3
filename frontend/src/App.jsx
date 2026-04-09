@@ -5,13 +5,13 @@ import Game from'./components/Game';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Leaderboard from './components/Leaderboard';
+import Profile from './components/Profile'; 
 import { io } from 'socket.io-client';
-import './css/App.css'
+import './css/App.css';
 
 const socket = io('http://localhost:8080');
 
 function App() {
-
   return (
     <>
       <Routes>
@@ -21,9 +21,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile" element={<Profile />} /> 
       </Routes>
     </>
-  )
+  );
 }
 
 export default App;
