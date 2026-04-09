@@ -28,7 +28,7 @@ function Login(){
             }else{
                 setUsername('');
                 setPassword('');
-                alert("Login Not Successful: ", result.error);
+                alert("Login Not Successful: " + result.error);
             }
         }catch(e){
             console.error('Login error: ', e);

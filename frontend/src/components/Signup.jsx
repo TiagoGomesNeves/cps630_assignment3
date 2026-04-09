@@ -26,7 +26,7 @@ function Signup(){
             }else{
                 setUsername('');
                 setPassword('');
-                alert("Signup Not Successful: ", result.error);
+                alert("Signup Not Successful: " + result.error);
             }
         }catch(e){
             console.error('Signup error: ', e);
