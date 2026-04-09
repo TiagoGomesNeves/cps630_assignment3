@@ -158,6 +158,8 @@ body {
 }
 
 .navbar {
+  position: fixed;
+  top: 0;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -214,4 +216,64 @@ body {
   width: 29px;
   height: 29px;
   padding-bottom: 4px;
+}
+
+.lobby-card {
+  position: relative;
+  height: auto;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.room-code-display {
+  font-family: 'ArcadeClassic', sans-serif;
+  font-size: 4rem;
+  color: #00FFFF; 
+  text-shadow: 0 0 10px #00FFFF;
+  margin: 20px 0;
+}
+
+.pulse-text {
+  font-family: 'ArcadeClassic', sans-serif;
+  color: #FF00FF;
+  font-size: 1.5rem;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2px;
+  background: #ffffff;
+}
+
+.cancel-btn {
+  border-color: #ff0000;
+  background: rgba(40, 0, 0, 0.9);
+  filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.8));
+  margin-top: 30px;
+  padding: 10px 20px;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 0, 0, 0.3);
+}
+
+.arcade-input {
+  text-align: center;
+  letter-spacing: 5px;
 }

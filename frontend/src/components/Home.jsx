@@ -54,31 +54,52 @@ function Home({socket}){
         socket.emit('joinRoom', { token, code });
     };
 
-return ( 
-    <>
+    return ( 
+        <>
         <CursorRunner />
-
         <Navbar />
+        <div className='page-container'>
 
-        <h1>Home</h1>
-        {waiting ? (
-            <>
-                <p>Room Code: <strong>{roomCode}</strong></p>
-                <p>Waiting for opponent to join...</p>
-            </>
-        ) : (
-            <>
-                <button onClick={handleCreate}>Create Room</button>
-                <hr />
-                <input 
-                    placeholder='Enter room code' 
-                    value={code} 
-                    onChange={(e) => setCode(e.target.value)} 
-                />
-                <button onClick={handleJoin}>Join Room</button>
-            </>
-        )}
-    </>
-);
+            <div className='arcade-card lobby-card'>
+                <h1 className='login-title'>GAME LOBBY</h1>
+
+                {waiting ? (
+                    <div className='waiting-section'>
+                        <h2 className='arcade-font' style={{fontSize: '1.5rem'}}>ROOM CODE</h2>
+                        <div className='room-code-display'>{roomCode}</div>
+                        <p className='pulse-text'>WAITING FOR OPPONENT...</p>
+                        <button className='submit-button cancel-btn' onClick={() => setWaiting(false)}>CANCEL</button>
+                    </div>
+                ) : (
+                    <div className='lobby-actions'>
+                        <div className='action-group'>
+                            <button className='submit-button' onClick={handleCreate}>
+                                CREATE ROOM
+                            </button>
+                        </div>
+
+                        <div className='divider'>
+                            <span className='divider-line'></span>
+                            <span className='arcade-font' style={{fontSize: '1rem'}}>OR</span>
+                            <span className='divider-line'></span>
+                        </div>
+
+                        <div className='action-group'>
+                            <input 
+                                className='arcade-input'
+                                placeholder='ENTER CODE' 
+                                value={code} 
+                                onChange={(e) => setCode(e.target.value)} 
+                            />
+                            <button className='submit-button' style={{ marginLeft: '20px' }} onClick={handleJoin}>
+                                JOIN ROOM
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+        </>
+    );
 };
 export default Home;
