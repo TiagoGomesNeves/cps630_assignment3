@@ -16,6 +16,7 @@
 body{
   background-image: url('bg.png');
   background-size: cover;
+
 }
 
 .subtitle-text{
@@ -27,13 +28,13 @@ body{
   justify-content: center;
   width: 100%;
   margin-top: -80px;
+  text-align: center;
 }
 
 .entry-buttons{
   display: flex;
   justify-content: center;
   margin-top: 10px;
-  gap: 100px;
   width: 100%;
 }
 
