@@ -1,21 +1,21 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
   
     navigate("/", { replace: true });
   };
 
+  const handleHome = () => {
+    navigate("/home", { state: location.state }); 
+  };
+
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "space-between",
-      padding: "10px",
-      background: "#eee"
-    }}>
-      <h3>Home</h3>
+    <div>
+      <button onClick={handleHome}>Home</button>
       <button onClick={handleLogout}>Logout</button>
     </div>
   );

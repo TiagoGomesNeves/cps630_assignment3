@@ -3,6 +3,7 @@ import EntryPage from './components/EntryPage';
 import Home from './components/Home';
 import Game from'./components/Game';
 import { io } from 'socket.io-client';
+import './css/App.css';
 
 const socket = io('http://localhost:8080');
 

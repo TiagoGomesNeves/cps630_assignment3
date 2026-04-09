@@ -58,7 +58,7 @@ return (
     <>
         <Navbar />
 
-        <h1>Home</h1>
+        <h1 className="arcade-font">Home</h1>
         {waiting ? (
             <>
                 <p>Room Code: <strong>{roomCode}</strong></p>
