@@ -543,6 +543,40 @@ app.post('/api/auth/signup', express.json(), async (req, res) => {
             });
 });
 
+// Leaderboard route
+// Sorts by wins then draws then username alphabetically
+app.get('/api/leaderboard', requireAuth, async (req, res) => {
+    try {
+        // Gets only the fields needed for the leaderboard
+        const users = await User.find({}, 'username wins draws losses').lean();
 
+        // Builds leaderboard rows and total games
+        const leaderboard = users.map((user) => ({
+            username: user.username,
+            wins: user.wins,
+            draws: user.draws,
+            losses: user.losses,
+            totalGames: user.wins + user.draws + user.losses
+        }));
+
+        // Applies the required ranking rules
+        leaderboard.sort((a, b) => {
+            if (b.wins !== a.wins) {
+                return b.wins - a.wins;
+            }
+
+            if (b.draws !== a.draws) {
+                return b.draws - a.draws;
+            }
+
+            return a.username.localeCompare(b.username);
+        });
+
+        return res.status(200).json(leaderboard);
+    } catch (error) {
+        console.error('Leaderboard error:', error);
+        return res.status(500).json({ error: 'Failed to load leaderboard' });
+    }
+});
 
 server.listen(PORT, () => console.log(`Server started on port: ${PORT}`));
