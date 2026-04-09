@@ -1,0 +1,226 @@
+.cursor-runner {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    pointer-events: none;
+    z-index: 999;
+    will-change: transform;
+}
+
+.runner-piece {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f1f3ff;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 0 12px rgba(241, 243, 255, 0.18);
+}
+
+.runner-inner-hole {
+    display: none;
+}
+
+.runner-face {
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    display: flex;
+    gap: 2px;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.runner-eye-group {
+    position: relative;
+    width: 10px;
+    height: 13px;
+}
+
+.runner-brow {
+    position: absolute;
+    top: 0;
+    width: 8px;
+    height: 2px;
+    background: #5c6285;
+    border-radius: 999px;
+    transform-origin: center;
+    transition: transform 0.08s ease;
+}
+
+.runner-eye-group--left .runner-brow {
+    left: 0;
+    transform: rotate(-18deg);
+}
+
+.runner-eye-group--right .runner-brow {
+    right: 0;
+    transform: rotate(18deg);
+}
+
+.runner-eye {
+    position: absolute;
+    top: 3px;
+    left: 0;
+    width: 10px;
+    height: 7px;
+    background: #ffffff;
+    border-radius: 999px;
+    overflow: hidden;
+    transition:
+        width 0.08s ease,
+        height 0.08s ease,
+        transform 0.08s ease;
+}
+
+.runner-pupil {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #596180;
+    border-radius: 50%;
+    top: 2px;
+    left: 4px;
+    transition:
+        top 0.08s ease,
+        left 0.08s ease,
+        width 0.08s ease,
+        height 0.08s ease;
+}
+
+.runner-legs {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    display: flex;
+    gap: 5px;
+    transform: translateX(-50%);
+}
+
+.runner-leg {
+    width: 2px;
+    height: 8px;
+    background: #7d83a6;
+    border-radius: 999px;
+    transform-origin: top center;
+}
+
+.cursor-runner--normal .runner-leg:first-child {
+    animation: runnerLeftLeg 0.14s infinite alternate;
+}
+
+.cursor-runner--normal .runner-leg:last-child {
+    animation: runnerRightLeg 0.14s infinite alternate;
+}
+
+.cursor-runner--normal .runner-eye {
+    width: 10px;
+    height: 7px;
+    transform: translateY(0);
+}
+
+.cursor-runner--normal .runner-pupil {
+    top: 2px;
+    left: 4px;
+}
+
+.cursor-runner--normal .runner-eye-group--left .runner-brow {
+    transform: rotate(-10deg) translateY(0);
+}
+
+.cursor-runner--normal .runner-eye-group--right .runner-brow {
+    transform: rotate(10deg) translateY(0);
+}
+
+.cursor-runner--scared .runner-eye {
+    width: 11px;
+    height: 12px;
+    transform: translateY(-1px);
+}
+
+.cursor-runner--scared .runner-pupil {
+    width: 2px;
+    height: 2px;
+    top: 5px;
+    left: 4px;
+}
+
+.cursor-runner--scared .runner-eye-group--left .runner-brow {
+    transform: rotate(-3deg) translateY(-2px);
+}
+
+.cursor-runner--scared .runner-eye-group--right .runner-brow {
+    transform: rotate(3deg) translateY(-2px);
+}
+
+.cursor-runner--scared .runner-leg:first-child {
+    animation: runnerLeftLegFast 0.065s infinite alternate;
+}
+
+.cursor-runner--scared .runner-leg:last-child {
+    animation: runnerRightLegFast 0.065s infinite alternate;
+}
+
+@keyframes runnerLeftLeg {
+    from {
+        transform: rotate(16deg);
+    }
+    to {
+        transform: rotate(-16deg);
+    }
+}
+
+@keyframes runnerRightLeg {
+    from {
+        transform: rotate(-16deg);
+    }
+    to {
+        transform: rotate(16deg);
+    }
+}
+
+@keyframes runnerLeftLegFast {
+    from {
+        transform: rotate(32deg);
+    }
+    to {
+        transform: rotate(-32deg);
+    }
+}
+
+@keyframes runnerRightLegFast {
+    from {
+        transform: rotate(-32deg);
+    }
+    to {
+        transform: rotate(32deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .cursor-runner {
+        display: none;
+    }
+}
+
+.runner-piece {
+    background: #b58cff;
+    box-shadow:
+        0 0 0 1px rgba(233, 222, 255, 0.24),
+        0 0 10px rgba(181, 140, 255, 0.28);
+}
+
+.runner-brow {
+    background: #5f3f99;
+}
+
+.runner-pupil {
+    background: #49306f;
+}
+
+.runner-leg {
+    background: #724bb3;
+}

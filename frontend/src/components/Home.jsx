@@ -1,7 +1,7 @@
 import { useState , useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from "./Navbar";
-
+import CursorRunner from '../components/CursorRunner';
 
 function Home({socket}){
     const location = useLocation();
@@ -54,8 +54,10 @@ function Home({socket}){
         socket.emit('joinRoom', { token, code });
     };
 
-return (
+return ( 
     <>
+        <CursorRunner />
+
         <Navbar />
 
         <h1>Home</h1>
