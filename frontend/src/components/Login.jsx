@@ -35,16 +35,45 @@ function Login(){
             alert("Login Request Failed")
         }
     };
-    return(
-        <>  
-            <h1>Please Login</h1>
-            <form onSubmit={handleSubmit}>
-                <input type='text' required placeholder='Enter username' value={username} onChange={(e) => setUsername(e.target.value)}></input>
-                <input type='password' required placeholder='Enter Password' value={password} onChange={(e) => setPassword(e.target.value)}></input>
-                <button type='submit'>Submit</button>
+    return (
+    <div className='page-container'> 
+        <div className='arcade-card'>
+            <h1 className='login-title'>
+                PLEASE LOGIN
+            </h1>
+            
+            <form onSubmit={handleSubmit} className="login-form">
+                <input 
+                    type='text' 
+                    className='arcade-input' 
+                    required 
+                    placeholder='ENTER USERNAME' 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)} 
+                />
+                <input 
+                    type='password' 
+                    className='arcade-input' 
+                    required 
+                    placeholder='ENTER PASSWORD' 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                />
+                <button type='submit' className='submit-button'>
+                    SUBMIT
+                </button>
             </form>
-        </>
-    )
+
+            <h1 className='signup-title'>
+                Don't have an account?
+            </h1>
+
+            <button className='signup-button' onClick={() => navigate('/signup')}>
+                SIGN UP
+            </button>
+        </div>
+    </div>
+);
 }
 
 
