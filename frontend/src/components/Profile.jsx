@@ -37,42 +37,57 @@ const Profile = () => {
 
   return (
     <>
-      <Navbar />
+    <Navbar />
 
-      <div style={{
-        padding: "30px",
-        color: "white",
-        background: "#1e1e1e",
-        minHeight: "100vh"
-      }}>
-        <h1 style={{ marginBottom: "20px" }}>Profile</h1>
+    <div className="page-container">
+      
+    <div className="arcade-card profile-card">
+      <h1 className="login-title">PLAYER PROFILE</h1>
 
-        <div style={{
-          background: "#2c2c2c",
-          padding: "20px",
-          borderRadius: "10px",
-          width: "300px"
-        }}>
-          <p><strong>Username:</strong> {stats.username}</p>
+      <div className="profile-content">
+        <div className="username-display">
+          <span className="label">PLayer:</span>
+          <span className="value">{stats.username}</span>
+        </div>
 
-          <hr />
+        <div className="stats-grid">
+          <div className="stat-item">
+            <span className="stat-label">GAMES PLAYED</span>
+            <span className="stat-value">{stats.gamesPlayed}</span>
+          </div>
+          
+          <div className="stat-item wins">
+            <span className="stat-label">WINS</span>
+            <span className="stat-value">{stats.wins}</span>
+          </div>
 
-          <p><strong>Games Played:</strong> {stats.gamesPlayed}</p>
-          <p><strong>Wins:</strong> {stats.wins}</p>
-          <p><strong>Losses:</strong> {stats.losses}</p>
-          <p><strong>Draws:</strong> {stats.draws}</p>
+          <div className="stat-item losses">
+            <span className="stat-label">LOSSES</span>
+            <span className="stat-value">{stats.losses}</span>
+          </div>
 
-          <hr />
+          <div className="stat-item draws">
+            <span className="stat-label">DRAWS</span>
+            <span className="stat-value">{stats.draws}</span>
+          </div>
+        </div>
 
-          <p>
-            <strong>Win Rate:</strong>{" "}
+        <div className="win-rate-container">
+          <div className="win-rate-label">
+            Win Rate
+          </div>
+          <div className="win-rate-number">
             {stats.gamesPlayed > 0
               ? Math.round((stats.wins / stats.gamesPlayed) * 100) + "%"
               : "0%"}
-          </p>
+          </div>
         </div>
+
       </div>
-    </>
+
+    </div>
+  </div>
+  </>
   );
 };
 
