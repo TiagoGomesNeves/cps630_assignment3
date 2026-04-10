@@ -34,6 +34,44 @@ db.once('open', function () {
     console.log("Database connected!");
 });
 
+const defaultAccounts = [
+    {username: "admin", password: "adminpass123" },
+    {username: "defaultUser", password: "userPass123"}
+]
+
+async function addDefaultAccounts (){
+
+    const accountNum = await User.countDocuments();
+
+    if (accountNum != 0){
+        console.log("Not adding Accounts, Already Added");
+        return;
+    }
+    for (const account of defaultAccounts) {
+        const hashed = await bcrypt.hash(account.password, 10);
+        const token = crypto.randomUUID();
+
+        const newUser = new User({
+            username: account.username,
+            password: hashed,
+            token: token,
+            wins: 0,
+            losses: 0,
+            draws: 0
+        });
+
+        await newUser.save()
+                .then(savedUser => {
+                    console.log("Added user: ", savedUser);
+                })
+                .catch(err => {
+                    console.log("Error in adding user: ", err);
+                });
+    }
+}
+
+addDefaultAccounts();
+
 
 function checkWin(board) {
     const rows = 6, cols = 7;
@@ -514,6 +552,16 @@ app.post('/api/auth/signup', express.json(), async (req, res) => {
 
     if (!username || !password){
         return res.status(400).json({error: 'Username and Password are required'});
+    }
+
+    if (password.length < 8){
+        return res.status(400).json({error: 'Password must be 8 Characters or longer'});
+    }else if (!/\d/.test(password)){
+        return res.status(400).json({error: "Password Must contain a number"});
+    }else if (!/[a-zA-z]/.test(password)){
+        return res.status(400).json({error: "Password Must contain a letter"});
+    }else if (!/^[a-zA-z0-9]+$/.test(password)){ 
+        return res.status(400).json({error: 'Password must only contain letters and numbers'});
     }
 
     const user = await User.findOne({username: username});
