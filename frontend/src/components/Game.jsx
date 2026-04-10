@@ -192,45 +192,60 @@ function Game({ socket }) {
     };
 
     return (
-        <>
-            <h1>Connect 4</h1>
-            <p>{gameOver ? resultMessage : isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
-            {disconnectMessage && !gameOver && <p>{disconnectMessage}</p>}
-            {!gameOver && <button onClick={handleForfeit}>Forfeit Match</button>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 60px)', gap: '4px' }}>
-                {board.map((cell, i) => (
-                    <div
-                        key={i}
-                        onClick={() => handleColumnClick(i % 7)}
-                        style={{
-                            width: 60, height: 60,
-                            borderRadius: '50%',
-                            backgroundColor: cell === 'R' ? 'red' : cell === 'Y' ? 'yellow' : 'white',
-                            border: '2px solid #333',
-                            cursor: isMyTurn && !gameOver ? 'pointer' : 'default'
-                        }}
-                    />
-                ))}
-            </div>
-            {gameOver && <button onClick={() => navigate('/home', { state: { token } })}>Back to Home</button>}
-            <div style={{ marginTop: '20px' }}>
-                <h3>Chat</h3>
-                <div style={{ height: '200px', overflowY: 'scroll', border: '1px solid #333', padding: '8px' }}>
-                    {messages.map((msg, i) => (
-                        <p key={i}>
-                            <strong>{msg.senderToken === token ? 'You' : 'Opponent'}:</strong> {msg.message}
-                        </p>
+        <div className="page-container" style={{ display: 'flex', flexDirection: 'row', gap: '10px', paddingBottom: '40px' }}>
+            <div className="arcade-card game-card">
+                <h1 className="login-title">Connect 4</h1>
+                
+                <p className={`status-text ${isMyTurn ? 'pulse-text' : ''}`}>
+                    {gameOver ? resultMessage : isMyTurn ? 'Your turn' : "Opponent's turn"}
+                </p>
+
+                {disconnectMessage && !gameOver && <p className="error-text">{disconnectMessage}</p>}
+
+                <div className="game-board">
+                    {board.map((cell, i) => (
+                        <div
+                            key={i}
+                            className={`cell ${cell === 'R' ? 'red-piece' : cell === 'Y' ? 'yellow-piece' : 'empty-cell'}`}
+                            onClick={() => handleColumnClick(i % 7)}
+                            style={{ cursor: isMyTurn && !gameOver ? 'pointer' : 'default' }}
+                        />
                     ))}
                 </div>
-                <input
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Type a message..."
-                />
-                <button onClick={handleSendMessage}>Send</button>
+
+                <div className="game-actions">
+                    {!gameOver ? (
+                        <button className="navbar-button cancel-btn" onClick={handleForfeit}>Forfeit Match</button>
+                    ) : (
+                        <button className="submit-button" style={{ padding: '10px 20px' }} onClick={() => navigate('/home', { state: { token } })}>Back to Home</button>
+                    )}
+                </div>
+
             </div>
-        </>
+
+            <div className="arcade-card chat-card">
+                <div className="chat-section">
+                        <h3 className="login-title" style={{ marginTop: '20px' }}>Chat</h3>
+                        <div className="chat-box">
+                            {messages.map((msg, i) => (
+                                <p key={i} className="chat-msg">
+                                    <span className="chat-user">{msg.senderToken === token ? 'You' : 'Opponent'}:</span> {msg.message}
+                                </p>
+                            ))}
+                        </div>
+                        <div className="chat-input-container">
+                            <input
+                                className="arcade-input"
+                                value={messageInput}
+                                onChange={(e) => setMessageInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Type..."
+                            />
+                            <button className="navbar-button send-btn" onClick={handleSendMessage}>Send</button>
+                        </div>
+                    </div>
+            </div>
+        </div>
     );
 }
 
