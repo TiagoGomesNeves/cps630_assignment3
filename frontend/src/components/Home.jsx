@@ -6,10 +6,7 @@ import CursorRunner from '../components/CursorRunner';
 function Home({socket}){
     const location = useLocation();
     const token = location.state?.token;
-    const navigate = useNavigate();
-
-    console.log('Home token:', token);
-    
+    const navigate = useNavigate();    
     const [code , setCode ] = useState('');
     const [waiting, setWaiting] = useState(false);
     const [roomCode, setRoomCode] = useState('');

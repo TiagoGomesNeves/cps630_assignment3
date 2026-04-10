@@ -20,6 +20,8 @@ function Game({ socket }) {
     const [messageInput, setMessageInput] = useState('');
     const [disconnectMessage, setDisconnectMessage] = useState('');
 
+    const CHAT_MESSAGE_LIMIT = 100;
+
     const gameOverRef = useRef(false);
     const leaveHandledRef = useRef(false);
     const cleanupArmedRef = useRef(false);
@@ -199,8 +201,10 @@ function Game({ socket }) {
     };
 
     const handleSendMessage = () => {
-        if (!messageInput.trim()) return;
-        socket.emit('sendMessage', { code, token, message: messageInput });
+        const trimmedMessage = messageInput.trim();
+
+        if (!trimmedMessage) return;
+        socket.emit('sendMessage', { code, token, message: trimmedMessage });
         setMessageInput('');
     };
 
@@ -263,7 +267,12 @@ function Game({ socket }) {
                         <div className="chat-box">
                             {messages.map((msg, i) => (
                                 <p key={i} className="chat-msg">
-                                    <span className="chat-user">{msg.senderToken === token ? 'You' : 'Opponent'}:</span> {msg.message}
+                                    <span
+                                        className="chat-user"
+                                        style={{ color: msg.senderToken === token ? '' : 'red' }}
+                                    >
+                                        {msg.senderToken === token ? 'You' : 'Opponent'}:
+                                    </span> {msg.message}
                                 </p>
                             ))}
                         </div>
@@ -274,6 +283,7 @@ function Game({ socket }) {
                                 onChange={(e) => setMessageInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder="Type..."
+                                maxLength={CHAT_MESSAGE_LIMIT}
                             />
                             <button className="navbar-button send-btn" onClick={handleSendMessage}>Send</button>
                         </div>

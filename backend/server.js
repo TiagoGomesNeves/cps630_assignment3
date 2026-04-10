@@ -143,6 +143,23 @@ async function updateGameStats(room, winnerToken = null, isDraw = false) {
 // Map used to store disconnect grace period timers
 const disconnectTimers = new Map();
 
+function clearDisconnectTimer(roomCode, token) {
+    const disconnectKey = `${roomCode}:${token}`;
+
+    if (disconnectTimers.has(disconnectKey)) {
+        clearTimeout(disconnectTimers.get(disconnectKey));
+        disconnectTimers.delete(disconnectKey);
+    }
+}
+
+async function deleteRoomAndClearTimers(room) {
+    for (const player of room.players) {
+        clearDisconnectTimer(room.code, player.token);
+    }
+
+    await Room.deleteOne({ _id: room._id });
+}
+
 async function startDisconnectTimer(roomCode, disconnectedToken) {
     const disconnectKey = `${roomCode}:${disconnectedToken}`;
 
@@ -202,6 +219,11 @@ async function disconnectPlayerFromRoom(room, token) {
     player.socketId = null;
     await room.save();
 
+    if (room.players.every(p => !p.socketId)) {
+        await deleteRoomAndClearTimers(room);
+        return;
+    }
+
     io.to(room.code).emit('playerDisconnected', { token });
     await startDisconnectTimer(room.code, token);
 }
@@ -222,11 +244,19 @@ io.on('connection', (socket) => {
             if (!player) {
                 continue;
             }
+
             socket.leave(oldRoom.code);
+
             if (oldRoom.status === 'waiting') {
                 await Room.deleteOne({ _id: oldRoom._id });
                 continue;
             }
+
+            if (oldRoom.players.every(p => !p.socketId)) {
+                await deleteRoomAndClearTimers(oldRoom);
+                continue;
+            }
+
             if (player.socketId) {
                 await disconnectPlayerFromRoom(oldRoom, token);
             }
@@ -259,6 +289,7 @@ io.on('connection', (socket) => {
             if (oldRoom.code === cleanedCode) {
                 continue;
             }
+
             const player = oldRoom.players.find((p) => p.token === token);
 
             if (!player) {
@@ -272,15 +303,27 @@ io.on('connection', (socket) => {
                 continue;
             }
 
+            if (oldRoom.players.every(p => !p.socketId)) {
+                await deleteRoomAndClearTimers(oldRoom);
+                continue;
+            }
+
             if (player.socketId) {
                 await disconnectPlayerFromRoom(oldRoom, token);
             }
         }
+
         const room = await Room.findOne({code: cleanedCode});
 
         if (!room){
             return socket.emit('error', {message: "Room Not Found"});
         }
+
+        if (room.status === 'active' && room.players.every(p => !p.socketId)) {
+            await deleteRoomAndClearTimers(room);
+            return socket.emit('error', {message: "Room Not Found"});
+        }
+
         if (room.players.length >= 2){
             return socket.emit('error', {message: 'Room is Full'});
         }
@@ -336,6 +379,11 @@ io.on('connection', (socket) => {
 
             if (oldRoom.status === 'waiting') {
                 await Room.deleteOne({ _id: oldRoom._id });
+                continue;
+            }
+
+            if (oldRoom.players.every(p => !p.socketId)) {
+                await deleteRoomAndClearTimers(oldRoom);
                 continue;
             }
 
@@ -524,7 +572,17 @@ io.on('connection', (socket) => {
     });
 
     socket.on('sendMessage', ({ code, token, message }) => {
-        io.to(code).emit('newMessage', { token, message });
+        if (typeof message !== 'string') {
+            return;
+        }
+
+        const cleanedMessage = message.trim().slice(0, 100);
+
+        if (!cleanedMessage) {
+            return;
+        }
+
+        io.to(code).emit('newMessage', { token, message: cleanedMessage });
     });
 
 });
@@ -678,4 +736,3 @@ app.get('/api/profile', requireAuth, async (req, res) => {
 });
 
 server.listen(PORT, () => console.log(`Server started on port: ${PORT}`));
-
