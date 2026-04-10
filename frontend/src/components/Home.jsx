@@ -91,9 +91,9 @@ function Home({socket}){
                                 value={code} 
                                 onChange={(e) => setCode(e.target.value)} 
                             />
-                            <button className='submit-button' style={{ marginLeft: '20px' }} onClick={handleJoin}>
-                                JOIN ROOM
-                            </button>
+                                <button className='submit-button' onClick={handleJoin}>
+                                    JOIN ROOM
+                                </button>
                         </div>
                     </div>
                 )}

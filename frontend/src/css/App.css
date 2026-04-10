@@ -239,6 +239,7 @@ body {
 .lobby-actions {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 30px;
   margin-top: 30px;
 }
@@ -551,4 +552,9 @@ body {
   color: #ff0000;
   font-family: 'ArcadeClassic', sans-serif;
   font-size: 1rem;
+}
+
+.centered{
+   display: flex;
+   justify-content: center;
 }

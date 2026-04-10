@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import dropPiece from '../assets/pieceDrop.mp3'
+import gameWin from '../assets/gameWin.mp3'
+import gameLost from '../assets/gameLost.mp3'
+
 
 function Game({ socket }) {
     const location = useLocation();
@@ -62,17 +66,33 @@ function Game({ socket }) {
             setDisconnectMessage('');
 
             if (forfeitedBy) {
-                if (forfeitedBy === token) setResultMessage('You forfeited. You lose!');
-                else setResultMessage('Opponent forfeited. You win!');
+                if (forfeitedBy === token) {
+                    setResultMessage('You forfeited. You lose!');
+                    gameLostSounds();
+                    
+                }
+                else {
+                    setResultMessage('Opponent forfeited. You win!');
+                    gameWinSounds();
+                }
             } else if (disconnectedBy) {
-                if (disconnectedBy === token) setResultMessage('You disconnected for too long. You lose!');
-                else setResultMessage('Opponent disconnected for too long. You win!');
+                if (disconnectedBy === token) {
+                    setResultMessage('You disconnected for too long. You lose!');
+                    gameLostSounds();
+                }
+                else {
+                    setResultMessage('Opponent disconnected for too long. You win!');
+                    gameWinSounds();
+                }
             } else if (winner === null) {
                 setResultMessage("It's a draw!");
+                gameLostSounds();
             } else if (winner === token) {
                 setResultMessage('You win!');
+                gameWinSounds();
             } else {
                 setResultMessage('You lose!');
+                gameLostSounds();
             }
         };
 
@@ -191,6 +211,20 @@ function Game({ socket }) {
         navigate('/home', { state: { token } });
     };
 
+    const dropSound = () => {
+        const audio = new Audio(dropPiece);
+        audio.play();
+    }
+
+    const gameWinSounds = () =>{
+        const audio = new Audio(gameWin);
+        audio.play();
+    }
+
+    const gameLostSounds = () => {
+        const audio = new Audio(gameLost);
+        audio.play();
+    }
     return (
         <div className="page-container" style={{ display: 'flex', flexDirection: 'row', gap: '10px', paddingBottom: '40px' }}>
             <div className="arcade-card game-card" style={{ marginTop: '0px' }}>
@@ -207,7 +241,7 @@ function Game({ socket }) {
                         <div
                             key={i}
                             className={`cell ${cell === 'R' ? 'red-piece' : cell === 'Y' ? 'yellow-piece' : 'empty-cell'}`}
-                            onClick={() => handleColumnClick(i % 7)}
+                            onClick={() => {handleColumnClick(i % 7); dropSound();}}
                             style={{ cursor: isMyTurn && !gameOver ? 'pointer' : 'default' }}
                         />
                     ))}
