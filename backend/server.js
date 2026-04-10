@@ -375,6 +375,30 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('cancelWaitingRoom', async ({ token, code }) => {
+        const cleanedCode = code.trim().toUpperCase();
+
+        const room = await Room.findOne({
+            code: cleanedCode,
+            status: 'waiting',
+            'players.token': token
+        });
+
+        if (!room) {
+            return;
+        }
+
+        const player = room.players.find(p => p.token === token);
+
+        if (!player || player.socketId !== socket.id) {
+            return;
+        }
+
+        socket.leave(cleanedCode);
+        await Room.deleteOne({ _id: room._id });
+    });
+
+
     socket.on('leaveGame', async ({ code, token }) => {
         const cleanedCode = code.trim().toUpperCase();
         const room = await Room.findOne({ code: cleanedCode });
@@ -528,12 +552,13 @@ async function requireAuth(req, res, next){
 // Login used to login the user and retrieve the users token
 app.post('/api/auth/login', express.json(), async (req, res) => {
     const { username, password } = req.body || {};
+    const normalizedUsername = username?.trim();
 
-    if (!username || !password){
+    if (!normalizedUsername || !password){
         return res.status(400).json({error: 'Username and Password are required'});
     }
 
-    const user = await User.findOne({username: username});
+    const user = await User.findOne({username: normalizedUsername});
     if (!user){
         return res.status(401).json({error: "Error With Username or Password"});
     }
@@ -549,22 +574,29 @@ app.post('/api/auth/login', express.json(), async (req, res) => {
 // Signup used to create an user account and create a token for the user
 app.post('/api/auth/signup', express.json(), async (req, res) => {
     const { username, password } = req.body || {};
+    const normalizedUsername = username?.trim();
 
-    if (!username || !password){
+    if (!normalizedUsername || !password){
         return res.status(400).json({error: 'Username and Password are required'});
+    }
+
+    if (normalizedUsername.length < 3 || normalizedUsername.length > 15){
+        return res.status(400).json({error: 'Username must be between 3 and 15 characters'});
+    }else if (!/^[a-zA-Z0-9]+$/.test(normalizedUsername)){
+        return res.status(400).json({error: 'Username must only contain letters and numbers'});
     }
 
     if (password.length < 8){
         return res.status(400).json({error: 'Password must be 8 Characters or longer'});
     }else if (!/\d/.test(password)){
         return res.status(400).json({error: "Password Must contain a number"});
-    }else if (!/[a-zA-z]/.test(password)){
+    }else if (!/[a-zA-Z]/.test(password)){
         return res.status(400).json({error: "Password Must contain a letter"});
-    }else if (!/^[a-zA-z0-9]+$/.test(password)){ 
+    }else if (!/^[a-zA-Z0-9]+$/.test(password)){ 
         return res.status(400).json({error: 'Password must only contain letters and numbers'});
     }
 
-    const user = await User.findOne({username: username});
+    const user = await User.findOne({username: normalizedUsername});
     if (user){
         return res.status(409).json({error: "Username already Exists"});
     }
@@ -573,7 +605,7 @@ app.post('/api/auth/signup', express.json(), async (req, res) => {
     const token = crypto.randomUUID();
 
     const newUser = new User({
-        username: username,
+        username: normalizedUsername,
         password: hashed,
         token: token,
         wins: 0,

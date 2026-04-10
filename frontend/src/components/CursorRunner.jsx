@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import '../css/CursorRunner.css';
 
+// Keep values inside a safe min and max range
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
+// Pick a random decimal between two values
 function randomBetween(min, max) {
     return min + (Math.random() * (max - min));
 }
 
+// Move a current value toward a target without overshooting
 function approach(current, target, maxDelta) {
     if (current < target) {
         return Math.min(current + maxDelta, target);
@@ -17,6 +20,8 @@ function approach(current, target, maxDelta) {
     return Math.max(current - maxDelta, target);
 }
 
+// Choose a new idle movement target
+// This makes the littlr mascot guy wander in a natural direction while also not living at the edges of the screen
 function pickWanderTarget(currentX, currentY, mascotSize, padding) {
     const angle = Math.random() * Math.PI * 2;
     const distance = randomBetween(300, 400);
@@ -40,6 +45,8 @@ function pickWanderTarget(currentX, currentY, mascotSize, padding) {
 }
 
 function CursorRunner() {
+    // Main behaviour tuning values
+    // These control size, fear distance, movement speed, spacing from edges, etc
     const mascotSize = 28;
     const enterFearRadius = 165;
     const exitFearRadius = 235;
@@ -51,6 +58,7 @@ function CursorRunner() {
     const predictionSeconds = 0.1;
     const minFearSeconds = 0.22;
 
+    // Store live movement data without causing rerenders every frame
     const runnerRef = useRef(null);
     const faceRef = useRef('normal');
     const modeRef = useRef('wander');
@@ -60,18 +68,24 @@ function CursorRunner() {
     const wanderTargetRef = useRef(null);
     const wanderRetargetAtRef = useRef(0);
 
+    // State is only used for the face class so React updates happen rarely
     const [face, setFace] = useState('normal');
 
+    // Current on-screen position of the mascot
     const positionRef = useRef({
         x: window.innerWidth * 0.7,
         y: window.innerHeight * 0.74
     });
 
+    // Current movement velocity
     const velocityRef = useRef({
         x: 0,
         y: 0
     });
 
+    // Mouse tracking data
+    // Stores position plus estimated mouse velocity so the mascot can react
+    // to where the cursor is going. Not just where it is right now
     const mouseRef = useRef({
         x: -9999,
         y: -9999,
@@ -89,12 +103,14 @@ function CursorRunner() {
             return undefined;
         }
 
+        // Apply the visual screen position directly to the DOM node
         const setRunnerTransform = (x, y) => {
             runner.style.transform = `translate3d(${x}px, ${y}px, 0)`;
         };
 
         setRunnerTransform(positionRef.current.x, positionRef.current.y);
 
+        // Track cursor movement and estimate cursor velocity,
         const handleMouseMove = (e) => {
             const now = performance.now();
             const mouse = mouseRef.current;
@@ -117,6 +133,8 @@ function CursorRunner() {
         let animationFrameId;
         let lastFrameTime = performance.now();
 
+        // Main animation loop
+        // Runs every frame, updates mode, velocity, position, and face state
         const tick = (now) => {
             const dt = Math.min((now - lastFrameTime) / 1000, 0.03);
             lastFrameTime = now;
@@ -125,6 +143,7 @@ function CursorRunner() {
             const velocity = velocityRef.current;
             const mouse = mouseRef.current;
 
+            // Predict where the mouse will be very shortly so movement feels less choppy
             const predictedMouseX = mouse.x + (mouse.vx * predictionSeconds);
             const predictedMouseY = mouse.y + (mouse.vy * predictionSeconds);
 
@@ -138,6 +157,9 @@ function CursorRunner() {
             const nowSeconds = now / 1000;
             let nextMode = modeRef.current;
 
+            // Mode switching with hysteresis
+            // The mascot gets scared when the mouse gets close enough
+            // It only relaxes after the cursor is farther away and enough time has passed 
             if (modeRef.current === 'wander') {
                 if (distanceFromMouse < enterFearRadius) {
                     nextMode = 'scared';
@@ -159,11 +181,14 @@ function CursorRunner() {
 
             modeRef.current = nextMode;
 
+            // Desired movement values for this frame
             let desiredVelocityX = 0;
             let desiredVelocityY = 0;
             let maxTurnRate = 0;
             let nextFace = nextMode === 'scared' ? 'scared' : 'normal';
 
+            // Scared behaviour
+            // Pick a escape point away from the cursor and sometimes add side bias
             if (nextMode === 'scared') {
                 const shouldPickNewEscapeTarget =
                     !escapeTargetRef.current ||
@@ -211,10 +236,13 @@ function CursorRunner() {
                 desiredVelocityY = targetUnitY * targetSpeed;
                 maxTurnRate = 2600 * dt;
 
+                // Once it reaches the current escape target, allow a new one to be picked
                 if (targetDistance < 18) {
                     escapeTargetRef.current = null;
                 }
             } else {
+                // Wandering behaviour
+                // The mascot slowly picks random nearby goals and glides toward them
                 const currentWanderTarget = wanderTargetRef.current;
 
                 let targetDistance = Infinity;
@@ -261,6 +289,7 @@ function CursorRunner() {
                 }
             }
 
+            // edge avoidance so the mascot starts steering away before hitting a wall
             if (position.x < 65) {
                 desiredVelocityX += 180;
             } else if (position.x > window.innerWidth - mascotSize - 65) {
@@ -273,12 +302,15 @@ function CursorRunner() {
                 desiredVelocityY -= 180;
             }
 
+            // steer current velocity toward desired velocity
             velocity.x = approach(velocity.x, desiredVelocityX, maxTurnRate);
             velocity.y = approach(velocity.y, desiredVelocityY, maxTurnRate);
 
+            // Move based on velocity and frame time
             position.x += velocity.x * dt;
             position.y += velocity.y * dt;
 
+            // Hard screen boundaries so the mascot never leaves the screen
             const minX = padding;
             const maxX = window.innerWidth - mascotSize - padding;
             const minY = padding;
@@ -306,6 +338,7 @@ function CursorRunner() {
                 hitEdge = true;
             }
 
+            // If it collides with an edge, force a fresh target next frame
             if (hitEdge) {
                 if (nextMode === 'scared') {
                     escapeTargetRef.current = null;
@@ -314,8 +347,10 @@ function CursorRunner() {
                 }
             }
 
+            // Apply new position to the DOM
             setRunnerTransform(position.x, position.y);
 
+            // Only update face state when it actually changes
             if (faceRef.current !== nextFace) {
                 faceRef.current = nextFace;
                 setFace(nextFace);
@@ -326,12 +361,14 @@ function CursorRunner() {
 
         animationFrameId = requestAnimationFrame(tick);
 
+        // Cleanup listeners and animation on unmount
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             cancelAnimationFrame(animationFrameId);
         };
     }, []);
 
+    // Render the mascot structure
     return (
         <div
             ref={runnerRef}

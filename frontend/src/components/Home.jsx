@@ -1,4 +1,4 @@
-import { useState , useEffect } from 'react';
+import { useState , useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from "./Navbar";
 import CursorRunner from '../components/CursorRunner';
@@ -13,6 +13,17 @@ function Home({socket}){
     const [code , setCode ] = useState('');
     const [waiting, setWaiting] = useState(false);
     const [roomCode, setRoomCode] = useState('');
+
+    const waitingRef = useRef(false);
+    const roomCodeRef = useRef('');
+
+    useEffect(() => {
+        waitingRef.current = waiting;
+    }, [waiting]);
+
+    useEffect(() => {
+        roomCodeRef.current = roomCode;
+    }, [roomCode]);
     
     useEffect(() => {
         if (!token) {
@@ -20,16 +31,33 @@ function Home({socket}){
         }
     }, [token, navigate]);
 
+    const cancelWaitingRoom = () => {
+        const currentRoomCode = roomCodeRef.current;
+
+        if (!token || !waitingRef.current || !currentRoomCode) {
+            return;
+        }
+
+        socket.emit('cancelWaitingRoom', { token, code: currentRoomCode });
+        waitingRef.current = false;
+        roomCodeRef.current = '';
+    };
 
     useEffect(() => {
         if (!token) return;
 
         socket.on('roomCreated', ({ code }) => {
+            roomCodeRef.current = code;
+            waitingRef.current = true;
             setRoomCode(code);
             setWaiting(true);
         });
 
         socket.on('gameStart', ({ code, turn }) => {
+            waitingRef.current = false;
+            roomCodeRef.current = '';
+            setWaiting(false);
+            setRoomCode('');
             navigate(`/game/${code}`, { state: { token: token, turn: turn} });
         });
 
@@ -44,6 +72,24 @@ function Home({socket}){
         };
     }, [socket, navigate, token]);
 
+    useEffect(() => {
+        const handlePageHide = () => {
+            cancelWaitingRoom();
+        };
+
+        const handleBeforeUnload = () => {
+            cancelWaitingRoom();
+        };
+
+        window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('pagehide', handlePageHide);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            cancelWaitingRoom();
+        };
+    }, [socket, token]);
 
     const handleCreate = () => {
         socket.emit('createRoom', { token });
@@ -52,6 +98,12 @@ function Home({socket}){
     const handleJoin = () => {
         if (!code) return alert('Enter a room code');
         socket.emit('joinRoom', { token, code });
+    };
+
+    const handleCancel = () => {
+        cancelWaitingRoom();
+        setWaiting(false);
+        setRoomCode('');
     };
 
     return ( 
@@ -68,7 +120,7 @@ function Home({socket}){
                         <h2 className='arcade-font' style={{fontSize: '1.5rem'}}>ROOM CODE</h2>
                         <div className='room-code-display'>{roomCode}</div>
                         <p className='pulse-text'>WAITING FOR OPPONENT...</p>
-                        <button className='submit-button cancel-btn' onClick={() => setWaiting(false)}>CANCEL</button>
+                        <button className='submit-button cancel-btn' onClick={handleCancel}>CANCEL</button>
                     </div>
                 ) : (
                     <div className='lobby-actions'>
