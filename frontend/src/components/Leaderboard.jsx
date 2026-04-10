@@ -20,7 +20,6 @@ function Leaderboard(){
     useEffect(() => {
         if (!token) return;
 
-        // Fetches leaderboard data from the backend
         const fetchLeaderboard = async () => {
             try{
                 const response = await fetch('/api/leaderboard', {
@@ -46,39 +45,44 @@ function Leaderboard(){
     }, [token]);
 
 
-return (
-    <>
+    return (
+        <>
         <Navbar />
 
-        <h1>Leaderboard</h1>
-        <button onClick={() => navigate('/home', { state: { token } })}>Back to Home</button>
-        <hr />
+        <div className="page-container">
 
-        <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Username</th>
-                    <th>Wins</th>
-                    <th>Draws</th>
-                    <th>Losses</th>
-                    <th>Total Games</th>
-                </tr>
-            </thead>
-            <tbody>
-                {players.map((player, index) => (
-                    <tr key={player.username}>
-                        <td>{index + 1}</td>
-                        <td>{player.username}</td>
-                        <td>{player.wins}</td>
-                        <td>{player.draws}</td>
-                        <td>{player.losses}</td>
-                        <td>{player.totalGames}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    </>
-);
+            <div className="arcade-card leaderboard-card">
+                <h1 className="scoreboard-title">LEADERBOARD</h1>
+
+                <div>
+                    <table className="scoreboard-table">
+                        <thead>
+                            <tr className="table-headers">
+                                <th>POSITION</th>
+                                <th>USERNAME</th>
+                                <th>WINS</th>
+                                <th>LOSSES</th>
+                                <th>DRAWS</th>
+                                <th>TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {players.map((player, index) => (
+                                <tr key={player.username} className="score-row">
+                                    <td>{index + 1}</td>
+                                    <td>{player.username}</td>
+                                    <td>{player.wins}</td>
+                                    <td>{player.losses}</td>
+                                    <td>{player.draws}</td>
+                                    <td>{player.totalGames}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </>
+    );
 };
 export default Leaderboard;

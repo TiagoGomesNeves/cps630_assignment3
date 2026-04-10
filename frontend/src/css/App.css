@@ -1,4 +1,5 @@
 @import url('https://fonts.cdnfonts.com/css/arcade-classic');
+@import url('https://fonts.cdnfonts.com/css/ds-digital');
 
 .arcade-font {
   font-family: 'ArcadeClassic', sans-serif;
@@ -369,4 +370,67 @@ body {
   font-size: 3rem;
   margin-top: 15px;
   color: white;
+}
+
+/* Update the container to match .arcade-card styling */
+.leaderboard-card {
+  width: 1000px;
+  height: auto;
+  min-height: 600px;
+  padding: 40px;
+  background-color: rgba(15, 2, 14, 0.958); /* Match arcade-card */
+  text-align: center;   
+  outline: thick double #ffffff;
+  border-radius: 20px;
+  filter: drop-shadow(0 0 10px rgba(119, 5, 73, 0.5));
+}
+
+.scoreboard-title {
+  font-family: 'DS-Digital', sans-serif;
+  color: #ffffff;
+  font-size: 3.9rem;
+  letter-spacing: 5px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DS-Digital', sans-serif;
+}
+
+.table-headers th {
+  color: #ffffff; 
+  font-size: 1.8rem;
+  letter-spacing: 3px;
+  padding: 15px 20px;
+  text-align: center;
+  border-bottom: 3px solid #ffffff;
+}
+
+.score-row td { 
+  color: #ffffff;
+  padding: 20px 10px;
+  font-size: 2rem;
+  text-align: center; 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-row:first-child td {
+  color: #ffd900;
+  text-shadow: 0 0 10px #ffd900;
+  font-size: 2rem;
+}
+
+.score-row:nth-child(2) td {
+  color: #c8c8c8;
+  text-shadow: 0 0 10px #c8c8c8;
+  font-size: 2rem;
+}
+
+.score-row:nth-child(3) td {
+  color: #d25903;
+  text-shadow: 0 0 10px #d25903;
+  font-size: 2rem;
 }
