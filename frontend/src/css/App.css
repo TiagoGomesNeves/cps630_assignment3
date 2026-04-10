@@ -193,6 +193,7 @@ body {
   border: 4px solid #870087; 
   cursor: pointer;
   filter: drop-shadow(0 0 10px rgba(135, 0, 135, 0.905));
+  margin-left: 20px;
 }
 
 .navbar-button:hover {
