@@ -63,12 +63,15 @@ body {
 }
 
 .page-container {
-  margin-top: 30px;
   display: flex;
+  flex-direction: row;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh; 
+  align-items: flex-start;
+  padding-top: 120px;   
+  gap: 20px;
+  min-height: 100vh;
   width: 100%;
+  box-sizing: border-box; 
 }
 
 .arcade-card {
@@ -80,6 +83,7 @@ body {
   outline: thick double #ffffff;
   border-radius: 20px;
   filter: drop-shadow(0 0 10px rgba(119, 5, 73, 0.5));
+  margin: 50px 0;
 }
 
 .login-title {
@@ -170,6 +174,7 @@ body {
   padding: 25px 20px;
   background-color: rgba(0, 0, 0, 0.646);
   outline: solid 2px #ffffffa9;
+  z-index: 1000;
 }
 
 .navbar-button {
@@ -372,13 +377,12 @@ body {
   color: white;
 }
 
-/* Update the container to match .arcade-card styling */
 .leaderboard-card {
   width: 1000px;
   height: auto;
   min-height: 600px;
   padding: 40px;
-  background-color: rgba(15, 2, 14, 0.958); /* Match arcade-card */
+  background-color: rgba(15, 2, 14, 0.958); 
   text-align: center;   
   outline: thick double #ffffff;
   border-radius: 20px;
@@ -467,7 +471,6 @@ body {
   height: 60px;
   border-radius: 50%;
   border: 2px solid #333;
-  transition: transform 0.1s ease;
 }
 
 .empty-cell {

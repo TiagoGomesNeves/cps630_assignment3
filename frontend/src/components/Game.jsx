@@ -193,7 +193,7 @@ function Game({ socket }) {
 
     return (
         <div className="page-container" style={{ display: 'flex', flexDirection: 'row', gap: '10px', paddingBottom: '40px' }}>
-            <div className="arcade-card game-card">
+            <div className="arcade-card game-card" style={{ marginTop: '0px' }}>
                 <h1 className="login-title">Connect 4</h1>
                 
                 <p className={`status-text ${isMyTurn ? 'pulse-text' : ''}`}>
@@ -223,7 +223,7 @@ function Game({ socket }) {
 
             </div>
 
-            <div className="arcade-card chat-card">
+            <div className="arcade-card chat-card" style={{ marginTop: '0px' }}>
                 <div className="chat-section">
                         <h3 className="login-title" style={{ marginTop: '20px' }}>Chat</h3>
                         <div className="chat-box">

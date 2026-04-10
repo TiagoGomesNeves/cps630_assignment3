@@ -47,9 +47,8 @@ function Leaderboard(){
 
     return (
         <>
-        <Navbar />
-
         <div className="page-container">
+            <Navbar />
 
             <div className="arcade-card leaderboard-card">
                 <h1 className="scoreboard-title">LEADERBOARD</h1>
