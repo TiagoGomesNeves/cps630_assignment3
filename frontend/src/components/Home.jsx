@@ -136,6 +136,7 @@ function Home({socket}){
                         <div className='action-group'>
                             <input 
                                 className='arcade-input'
+                                style={{marginRight: '20px'}}
                                 placeholder='ENTER CODE' 
                                 value={code} 
                                 onChange={(e) => setCode(e.target.value)} 
