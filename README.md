@@ -15,6 +15,10 @@ The application includes several different views that each serve a clear purpose
 
 The purpose of our app is to provide a fun and interactive multiplayer game while also showing a meaningful use of the full MERN stack. From the start, we wanted to create something more creative than a standard full stack CRUD application, so we focused on building a retro arcade style website with a clear visual identity. We feel the final result stayed true to that vision while still being practical and easy to use. Overall, the project brings together the main assignment requirements through its full stack structure, authentication, persistent user data, REST API communication, real time gameplay, and complete user interface.
 
+## Application Video
+
+https://github.com/user-attachments/assets/4c899282-8b05-4065-a611-94d1f638bfb1
+
 ## Documentation
 
 ### Project Structure
